@@ -25,9 +25,10 @@ class Robot:
         return (self._v_l, self._v_r)
 
     # Setters
-    
+
     def set_wheel_speeds(self, speeds):
         self._v_l, self._v_r = speeds
+        print(speeds)
 
     def update_position(self):
         v = (self._r / 2) * (self._v_l + self._v_r)
@@ -36,7 +37,7 @@ class Robot:
         # Update robot's orientation
         self._theta += omega * self._dt
         self._theta = self._theta % (2 * math.pi)  # Keep theta within [0, 2*pi]
-        
+
         # Update robot's position
         self._x += v * math.cos(self._theta) * self._dt
         self._y += v * math.sin(self._theta) * self._dt

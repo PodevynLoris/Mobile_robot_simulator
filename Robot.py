@@ -26,7 +26,7 @@ class Robot:
 
     # Setters
     
-    def wheel_speeds(self, speeds):
+    def set_wheel_speeds(self, speeds):
         self._v_l, self._v_r = speeds
 
     def update_position(self):
@@ -43,7 +43,7 @@ class Robot:
 
 # Example usage
 robot = Robot()
-robot.wheel_speeds = (1, 1)  # Move forward
+robot.set_wheel_speeds = (1, 1)  # Move forward
 robot.update_position()
 
 # Accessing position and orientation

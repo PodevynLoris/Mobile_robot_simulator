@@ -52,7 +52,7 @@ while running:
     screen.fill(WHITE)
 
     # Draw the robot as a circle
-    pygame.draw.circle(screen, RED, (int(robot.x), int(robot.y)), 10)
+    pygame.draw.circle(screen, RED, (int(robot._x), int(robot._y)), 10)
 
     # Update the display
     pygame.display.flip()

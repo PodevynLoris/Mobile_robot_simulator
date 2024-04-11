@@ -28,9 +28,9 @@ class Robot:
 
     def set_wheel_speeds(self, speeds):
         self._v_l, self._v_r = speeds
-        print(speeds)
+        #print(speeds)
 
-    def update_position(self):
+    def update_position(self, SCREEN_WIDTH, SCREEN_HEIGHT):
         v = (self._r / 2) * (self._v_l + self._v_r)
         omega = (self._r / self._l) * (self._v_r - self._v_l)
 
@@ -42,11 +42,5 @@ class Robot:
         self._x += v * math.cos(self._theta) * self._dt
         self._y += v * math.sin(self._theta) * self._dt
 
-# Example usage
-robot = Robot()
-robot.set_wheel_speeds = (1, 1)  # Move forward
-robot.update_position()
 
-# Accessing position and orientation
-print(f"Robot Position: {robot.position}")
-print(f"Robot Orientation: {robot.orientation} radians")
+

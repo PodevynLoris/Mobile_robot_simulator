@@ -44,6 +44,13 @@ class Robot2:
     def get_velocity(self):
         return self._vl, self._vr
 
+    def get_velocity_components(self):
+        """Compute the velocity components v_x and v_y based on the current orientation and wheel velocities."""
+        V = (self._vr + self._vl) / 2  # Translational velocity
+        v_x = V * math.cos(self._theta)  # Velocity component in the x-direction
+        v_y = V * math.sin(self._theta)  # Velocity component in the y-direction
+        return v_x, v_y
+
     def get_l(self):
         return self._l
 
@@ -96,6 +103,7 @@ class Robot2:
             y_sensor = self.get_position()[1] - self.get_l() / 2 * math.sin(angle)
 
             self._sensors[i].set_position(x_sensor,y_sensor) #= Sensor(x_sensor, y_sensor, self._radius_sensor, angle, self._num_sensors)
+            self._sensors[i].set_angle(angle)
 
 
     def set_position(self,x,y):

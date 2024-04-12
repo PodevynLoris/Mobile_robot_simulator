@@ -32,16 +32,23 @@ clock = pygame.time.Clock()
 delta_ms = clock.tick(60)  # Get the number of milliseconds since last frame
 delta_t = delta_ms / 1000.0 * 5  # Convert milliseconds to seconds
 
-robot = Robot2(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, 0, 100, 12, 200)
+robot = Robot2(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, 0, 50, 12, 200)
+
 walls = [
-    Wall(100, 100, 200, 10),  # Horizontal wall
-    Wall(300, 200, 10, 150)  # Vertical wall
+    Wall(100, 100, 600, 20),
+    Wall(100, 120, 20, 360),
+    Wall(100, 460, 620, 20),
+    Wall(700, 120, 20, 360),
+    Wall(200, 120, 20, 260),
+    Wall(300, 200, 20, 200),
+    Wall(400, 120, 20, 200),
+    Wall(500, 200, 20, 200),
+    Wall(600, 120, 20, 260),
+    Wall(300, 380, 400, 20)
 ]
 
 SPEED = delta_ms
 
-import pygame
-import numpy as np
 
 def detect_collision(robot, walls, return_distance=False):
     robot_radius = robot.get_l() / 2
@@ -49,7 +56,7 @@ def detect_collision(robot, walls, return_distance=False):
     for wall in walls:
         closest_x = max(wall.rect.left, min(robot_center[0], wall.rect.right))
         closest_y = max(wall.rect.top, min(robot_center[1], wall.rect.bottom))
-        distance = np.sqrt((closest_x - robot_center[0])**2 + (closest_y - robot_center[1])**2)
+        distance = np.sqrt((closest_x - robot_center[0]) ** 2 + (closest_y - robot_center[1]) ** 2)
 
         if distance <= robot_radius:
             if return_distance:
@@ -58,75 +65,65 @@ def detect_collision(robot, walls, return_distance=False):
     return (False, None) + ((None,) if return_distance else ())
 
 
-def backtrack_to_collision(robot, wall, delta_t, initial_velocity):
-    collision_time = delta_t
-    time_step = delta_t / 10  # Start with 10% of the delta time
-
-    while collision_time > 0:
-        # Move the robot back slightly in time
-        new_x = robot._x - initial_velocity[0] * time_step
-        new_y = robot._y - initial_velocity[1] * time_step
-        robot.set_position(new_x, new_y)
-
-        # Check if it's still colliding
-        if not detect_collision(robot, [wall])[0]:
-            # If not colliding, step forward slightly to find approximate collision point
-            new_x = robot._x + initial_velocity[0] * time_step
-            new_y = robot._y + initial_velocity[1] * time_step
-            robot.set_position(new_x, new_y)
-            collision_time -= time_step
-            break
-
-        collision_time -= time_step
-
-    return collision_time
-
-
-def get_velocity_components(robot, delta_t):
-    # Calculate effective velocity based on wheel speeds and orientation
-    velocity = (robot._vr + robot._vl) / 2
-    vx = velocity * np.cos(robot._theta)
-    vy = velocity * np.sin(robot._theta)
-    return vx * delta_t, vy * delta_t  # Return the displacement components
-
-def get_wall_normal(robot, wall):
-    robot_center = np.array(robot.get_position())
+def get_wall_vectors(wall):
+    """ Returns the unit normal and tangent vectors to the wall, adjusted for Pygame's coordinate system. """
     if wall.rect.width > wall.rect.height:  # Horizontal wall
-        # Normal points up if robot is below the wall (y decreases as you go up)
-        return np.array([0, -1]) if robot_center[1] > wall.rect.centery else np.array([0, 1])
+        normal = np.array([0, 1]) if robot.get_position()[1] > wall.rect.centery else np.array([0, -1])
+        tangent = np.array([1, 0])
     else:  # Vertical wall
-        # Normal points left if robot is to the right of the wall
-        return np.array([-1, 0]) if robot_center[0] > wall.rect.centerx else np.array([1, 0])
+        normal = np.array([1, 0]) if robot.get_position()[0] < wall.rect.centerx else np.array([-1, 0])
+        tangent = np.array([0, 1])
+    return normal, tangent
+
+
+
+def decompose_velocity(velocity, normal, tangent):
+    """ Decomposes the velocity into components parallel and perpendicular to the wall. """
+    V = np.array(velocity)
+    V_parallel = np.dot(V, tangent) * tangent
+    V_perpendicular = np.dot(V, normal) * normal
+    return V_parallel, V_perpendicular
 
 
 def handle_collision(robot, wall):
-    normal = get_wall_normal(robot, wall)
+    """Adjusts robot's velocity upon collision to stop movement into the wall."""
+    normal, tangent = get_wall_vectors(wall)
+    vx, vy = robot.get_velocity_components()  # Ensure this method returns the current velocity components
+    V_parallel, V_perpendicular = decompose_velocity((vx, vy), normal, tangent)
+
+    # Set the perpendicular velocity to zero
+    new_velocity = V_parallel  # Only the component parallel to the wall is retained
+    robot.set_velocity(new_velocity)
+
+
+def reposition_robot(robot, wall, normal):
+    """Repositions robot to prevent it from intersecting the wall, considering Pygame's inverted y-axis."""
     robot_radius = robot.get_l() / 2
+    robot_center = np.array(robot.get_position())
 
-    if normal[1] == 0:  # Collision with vertical wall
-        offset_x = (wall.rect.left - robot_radius if normal[0] > 0 else wall.rect.right + robot_radius)
-        robot.set_position(offset_x, robot.get_position()[1])
-    else:  # Collision with horizontal wall
-        offset_y = (wall.rect.top - robot_radius if normal[1] > 0 else wall.rect.bottom + robot_radius)
-        robot.set_position(robot.get_position()[0], offset_y)
+    if normal[0] != 0:  # Vertical wall
+        new_x = wall.rect.left - robot_radius if normal[0] > 0 else wall.rect.right + robot_radius
+        robot.set_position(new_x, robot_center[1])
 
-    # Reset velocities to zero to stop further movement into the wall
-    robot._vl = 0
-    robot._vr = 0
-
+    if normal[1] != 0:  # Horizontal wall
+        new_y = wall.rect.top - robot_radius if normal[1] < 0 else wall.rect.bottom + robot_radius
+        robot.set_position(robot_center[0], new_y)
 
 
 running = True
 while running:
 
-    collision, wall = detect_collision(robot, walls)
-    if collision:
-        handle_collision(robot, wall)
-
     # Handle each event in the event queue
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        # Check for collision
+    collision, wall = detect_collision(robot, walls)
+    if collision:
+        handle_collision(robot, wall)
+        normal, _ = get_wall_vectors(wall)
+        reposition_robot(robot, wall, normal)
 
     key = pygame.key.get_pressed()
 
@@ -153,45 +150,60 @@ while running:
     # Clear the screen
     screen.fill(WHITE)
 
+    # Display wheels
     RADIUS = robot.get_l() / 2
-    # draw wheels
     angle = robot.get_orientation() + 2 * math.pi / 4
     xx = int(robot.get_position()[0] + RADIUS * math.cos(angle))
     yy = int(robot.get_position()[1] - RADIUS * math.sin(angle))
-    pygame.draw.circle(screen, BLACK, (xx, yy), 10)
+    pygame.draw.circle(screen, BLACK, (xx, yy), robot.get_l()/10)
     angle = angle + math.pi
     xx = int(robot.get_position()[0] + RADIUS * math.cos(angle))
     yy = int(robot.get_position()[1] - RADIUS * math.sin(angle))
-    pygame.draw.circle(screen, BLACK, (xx, yy), 10)
+    pygame.draw.circle(screen, BLACK, (xx, yy), robot.get_l()/10)
 
-    # Draw the robot as a circle
+    # Display Robot
     pygame.draw.circle(screen, RED, (int(robot.get_position()[0]), int(robot.get_position()[1])), robot.get_l() / 2)
 
+    # Display Walls
     for wall in walls:
-        wall.draw(screen)  # Draw each wall
+        wall.draw(screen)
 
-    # Draw the robot's orientation
+    # Display Orientation
     end_x = robot.get_position()[0] + robot.get_l() / 2 * math.cos(robot.get_orientation())
     end_y = robot.get_position()[1] - robot.get_l() / 2 * math.sin(robot.get_orientation())
     pygame.draw.line(screen, BLACK, (robot.get_position()[0], robot.get_position()[1]), (end_x, end_y), 5)
 
-    # draw ICC
+    # Display ICC
     if robot.get_velocity()[0] != robot.get_velocity()[1]:
         pygame.draw.circle(screen, BLUE, (int(robot.get_icc()[0]), int(robot.get_icc()[1])), 5)
 
     for i in range(robot.get_num_sensors()):
         s = robot.get_sensors()[i]
-        sensor_angle = robot.get_orientation() + i * 2 * math.pi / len(robot.get_sensors())
-        xx = s.get_position()[0] + s.get_radius() * math.cos(sensor_angle)
-        yy = s.get_position()[1] - s.get_radius() * math.sin(sensor_angle)
+        sensor_angle = s.get_angle()
 
-        #pygame.draw.line(screen, GREEN, robot.get_position(), robot.get_sensors()[i].get_position())
-        pygame.draw.line(screen, GREEN, robot.get_position(), (xx,yy))
+        # Display sensor lines
+        if s.get_dist() < s.get_radius():
+            pygame.draw.line(screen, GREEN, robot.get_position(), s.get_point_closest_wall())
+        else:
+            pygame.draw.line(screen, GREEN, robot.get_position(), robot.get_sensors()[i].get_position())
 
-        dist_text = font.render(f"{robot.get_sensors()[i].get_dist()}", True, BLACK)
+        # Display distance label of each sensor
+        dist_text = font.render(f"{int(robot.get_sensors()[i].get_dist())}", True, BLACK)
         text_x = robot.get_sensors()[i].get_position()[0] + 30 * math.cos(sensor_angle)
         text_y = robot.get_sensors()[i].get_position()[1] - 30 * math.sin(sensor_angle)
         screen.blit(dist_text, (text_x, text_y))
+
+    # Display Wheels speed
+    angle = robot.get_orientation() + 2 * math.pi / 4
+    xx = int(robot.get_position()[0] + RADIUS * math.cos(angle) / 2)
+    yy = int(robot.get_position()[1] - RADIUS * math.sin(angle) / 2)
+    speedLeft_text = font.render(f"{int(robot.get_velocity()[0])}", True, BLACK)
+    screen.blit(speedLeft_text, (xx, yy))
+    angle = angle + math.pi
+    xx = int(robot.get_position()[0] + RADIUS * math.cos(angle) / 2)
+    yy = int(robot.get_position()[1] - RADIUS * math.sin(angle) / 2)
+    speedRight_text = font.render(f"{int(robot.get_velocity()[1])}", True, BLACK)
+    screen.blit(speedRight_text, (xx, yy))
 
     # Update the display
     pygame.display.flip()
@@ -201,4 +213,3 @@ while running:
 
 # Quit Pygame
 pygame.quit()
-

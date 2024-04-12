@@ -13,6 +13,9 @@ class Sensor:
         self._robot = robot
         self._id = id
 
+        self._point_closest_wall_x = None
+        self._point_closest_wall_y = None
+
     def get_position(self):
         return self._x, self._y
 
@@ -25,18 +28,23 @@ class Sensor:
     def get_angle(self):
         return self._angle
 
+    def set_angle(self, angle):
+        self._angle =angle
+
     def get_num_sensors(self):
         return self._num_sensors
+
+    def get_point_closest_wall(self):
+        return self._point_closest_wall_x, self._point_closest_wall_y
 
     def set_position(self,x,y):
         self._x, self._y = x,y
 
     def detect_wall(self, walls):
 
-        sensor_angle = self._robot.get_orientation() + self._id * 2 * math.pi / len(self._robot.get_sensors())
         """Check if the sensor's line intersects with any walls and measure the distance."""
-        end_x = self._x + self._radius * math.cos(sensor_angle)  # End point of the sensor's line
-        end_y = self._y + self._radius * math.sin(sensor_angle)
+        end_x = self._x + self._radius * math.cos(self._angle)  # End point of the sensor's line
+        end_y = self._y - self._radius * math.sin(self._angle)
         sensor_line = (self._x, self._y), (end_x, end_y)
 
         closest_distance = self._radius  # Initialize with infinity
@@ -49,6 +57,8 @@ class Sensor:
                     distance = math.sqrt((point[0] - self._x) ** 2 + (point[1] - self._y) ** 2)
                     if distance < closest_distance:
                         closest_distance = distance
+                        self._point_closest_wall_x = point[0]
+                        self._point_closest_wall_y = point[1]
 
         if closest_distance < float('inf'):
             self._distance = closest_distance

@@ -18,6 +18,7 @@ class Robot2:
         self._num_sensors = num_sensors
         self._radius_sensor = radius_sensor
         self._sensors = []
+        self._R = 0
 
         self._SENSOR_ANGLE = 2 * math.pi / num_sensors
         for i in range(num_sensors):
@@ -70,9 +71,9 @@ class Robot2:
             self._y -= self._vr * delta_t * math.sin(self._theta)  # Negate the change in y
         else:
             # Compute radius to ICC
-            R = (self._l / 2) * ((self._vl + self._vr) / (self._vr - self._vl))
-            ICCx = self._x - R * math.sin(self._theta)
-            ICCy = self._y + R * math.cos(self._theta)  # Correct ICC calculation remains the same
+            self._R = (self._l / 2) * ((self._vl + self._vr) / (self._vr - self._vl))
+            ICCx = self._x - self._R * math.sin(self._theta)
+            ICCy = self._y + self._R * math.cos(self._theta)  # Correct ICC calculation remains the same
             self._iccx = ICCx
             self._iccy = ICCy
 
@@ -114,3 +115,6 @@ class Robot2:
         for sensor in self._sensors:
             sensor.detect_wall(walls)
                #print(f"Wall detected by sensor at angle {sensor.get_angle()} radians")
+
+    def get_R(self):
+        return self._R

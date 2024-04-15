@@ -58,9 +58,27 @@ class Robot2:
     def get_icc(self):
         return self._iccx, self._iccy
 
-    def set_velocity(self, velocity):
-        self._vl, self._vr = velocity
+    def set_velocity(self, velocity, increment=False):
+        if increment:
+            # Increment the current velocities
+            self._vl += velocity[0]
+            self._vr += velocity[1]
+        else:
+            # Set the velocities directly
+            self._vl, self._vr = velocity
 
+    # def increment_speed(self, increment):
+    #     # Retrieve the current velocities
+    #     current_left_speed, current_right_speed = self.get_velocity()
+        
+    #     # Increment the speeds
+    #     new_left_speed = current_left_speed + increment
+    #     new_right_speed = current_right_speed + increment
+        
+    #     # Set the new velocities
+    #     self.set_velocity((new_left_speed, new_right_speed))
+ 
+        
     def update(self, delta_t):
 
 

@@ -28,9 +28,11 @@ BLUE = (0, 0, 255)
 # Clock to control the frame rate
 clock = pygame.time.Clock()
 
+ROBOT_SPEED_PER_SECOND = 10
 # Limit frames per second
-delta_ms = clock.tick(60)  # Get the number of milliseconds since last frame
-delta_t = delta_ms / 1000.0 * 5  # Convert milliseconds to seconds
+delta_ms = clock.tick(60)  # Caps the frame rate at 60 FPS and measures frame duration
+delta_t = delta_ms / 1000.0  # Converts milliseconds to seconds
+
 
 robot = Robot2(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, 0, 80, 12, 200)
 
@@ -47,6 +49,7 @@ walls = [
   Wall(300, 200, 20, 200),
   Wall(400, 120, 20, 200),
   Wall(500, 200, 20, 200),'''
+<<<<<<< Updated upstream
 
 SPEED = delta_ms
 
@@ -75,6 +78,9 @@ def get_wall_vectors(wall):
     return normal, tangent
 
 
+=======
+  
+>>>>>>> Stashed changes
 running = True
 while running:
 
@@ -87,21 +93,29 @@ while running:
 
     key = pygame.key.get_pressed()
 
-    # Handle combined key presses first
-    if key[pygame.K_a] and key[pygame.K_z]:
-        robot.set_velocity((-SPEED, -SPEED))
-    elif key[pygame.K_LEFT] and key[pygame.K_RIGHT]:
-        robot.set_velocity((SPEED, SPEED))
-    else:
-        # Handle individual key presses
-        left_speed = -SPEED if key[pygame.K_a] else SPEED if key[pygame.K_LEFT] else 0
-        right_speed = -SPEED if key[pygame.K_z] else SPEED if key[pygame.K_RIGHT] else 0
+    if key[pygame.K_RIGHT]:
+        robot.set_velocity((0, ROBOT_SPEED_PER_SECOND * delta_t), True)
+    if key[pygame.K_LEFT]:
+        robot.set_velocity((ROBOT_SPEED_PER_SECOND * delta_t, 0), True)
+    if key[pygame.K_z]:
+        robot.set_velocity((0, -ROBOT_SPEED_PER_SECOND * delta_t), True)
+    if key[pygame.K_a]:
+        robot.set_velocity((-ROBOT_SPEED_PER_SECOND * delta_t, 0), True)
+    # # Handle combined key presses first
+    # if key[pygame.K_a] and key[pygame.K_z]:
+    #     robot.set_velocity((-SPEED, -SPEED))
+    # elif key[pygame.K_LEFT] and key[pygame.K_RIGHT]:
+    #     robot.set_velocity((SPEED, SPEED))
+    # else:
+    #     # Handle individual key presses
+    #     left_speed = -SPEED if key[pygame.K_a] else SPEED if key[pygame.K_LEFT] else 0
+    #     right_speed = -SPEED if key[pygame.K_z] else SPEED if key[pygame.K_RIGHT] else 0
 
-        # Apply new wheel speeds if any key is pressed, otherwise stop
-        if key[pygame.K_LEFT] or key[pygame.K_RIGHT] or key[pygame.K_a] or key[pygame.K_z]:
-            robot.set_velocity((left_speed, right_speed))
-        else:
-            robot.set_velocity((0, 0))
+    #     # Apply new wheel speeds if any key is pressed, otherwise stop
+    #     if key[pygame.K_LEFT] or key[pygame.K_RIGHT] or key[pygame.K_a] or key[pygame.K_z]:
+    #         robot.set_velocity((left_speed, right_speed))
+    #     else:
+    #         robot.set_velocity((0, 0))
 
     # Update the robot's position based on current wheel speeds
     robot.update(delta_t)

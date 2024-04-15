@@ -81,6 +81,44 @@ class Robot2:
  
         
     def update(self, delta_t):
+        # Calculate angular velocity
+        w = (self._vr - self._vl) / self._l
+
+        if abs(self._vr - self._vl) > 1e-10:  # Avoid division by zero with a small threshold
+            # Compute radius to ICC (Instantaneous Center of Curvature)
+            R = (self._l / 2) * ((self._vl + self._vr) / (self._vr - self._vl))
+
+            # Compute the ICC (Instantaneous Center of Curvature) coordinates
+            ICCx = self._x - R * math.sin(self._theta)
+            ICCy = self._y + R * math.cos(self._theta)
+
+            # Compute the rotation matrix
+            rotation_matrix = np.array([
+                [np.cos(w * delta_t), -np.sin(w * delta_t), 0],
+                [np.sin(w * delta_t),  np.cos(w * delta_t), 0],
+                [0,                    0,                    1]
+            ])
+
+            # Compute the position vector relative to ICC
+            position_vector = np.array([self._x - ICCx, self._y - ICCy, 1])
+
+            # Compute the rotated position
+            rotated_position = rotation_matrix @ position_vector
+            final_position = rotated_position + np.array([ICCx, ICCy, 0])
+
+            # Update position
+            self._x = final_position[0]
+            self._y = final_position[1]
+
+        else:  # When vr and vl are very close, the robot is effectively moving in a straight line
+            self._x += self._vr * delta_t * math.cos(self._theta)
+            self._y += self._vr * delta_t * math.sin(self._theta)
+
+        # Update the orientation
+        self._theta += w * delta_t
+
+        # Normalize the orientation to the range [0, 2*pi)
+        self._theta %= 2 * math.pi
 
 
         w = (self._vr - self._vl) / self._l  # angular velocity in radians per second

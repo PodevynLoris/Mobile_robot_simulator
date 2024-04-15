@@ -38,8 +38,8 @@ robot = Robot2(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2, 0, 80, 12, 200)
 
 walls = [
 
-    Wall(600, 120, 20, 260),
-    Wall(300, 380, 400, 20)
+    Wall(400, 120, 20, 200),
+
 ]
 '''Wall(100, 100, 600, 20),
   Wall(100, 120, 20, 360),
@@ -49,11 +49,11 @@ walls = [
   Wall(300, 200, 20, 200),
   Wall(400, 120, 20, 200),
   Wall(500, 200, 20, 200),'''
-<<<<<<< Updated upstream
+
 
 SPEED = delta_ms
 
-def detect_collision(robot, walls, return_distance=False):
+def detect_collision(robot, walls):
     robot_radius = robot.get_l() / 2
     robot_center = np.array(robot.get_position())
     for wall in walls:
@@ -62,25 +62,11 @@ def detect_collision(robot, walls, return_distance=False):
         distance = np.sqrt((closest_x - robot_center[0]) ** 2 + (closest_y - robot_center[1]) ** 2)
 
         if distance <= robot_radius:
-            if return_distance:
-                return True, wall, robot_center - np.array([closest_x, closest_y])
             return True, wall
-        return (False, None) + ((None,) if return_distance else ())
 
-def get_wall_vectors(wall):
-    """ Returns the unit normal and tangent vectors to the wall, adjusted for Pygame's coordinate system. """
-    if wall.rect.width > wall.rect.height:  # Horizontal wall
-        normal = np.array([0, 1]) if robot.get_position()[1] > wall.rect.centery else np.array([0, -1])
-        tangent = np.array([1, 0])
-    else:  # Vertical wall
-        normal = np.array([1, 0]) if robot.get_position()[0] < wall.rect.centerx else np.array([-1, 0])
-        tangent = np.array([0, 1])
-    return normal, tangent
+    return False, walls[0]
 
 
-=======
-  
->>>>>>> Stashed changes
 running = True
 while running:
 
@@ -117,9 +103,16 @@ while running:
     #     else:
     #         robot.set_velocity((0, 0))
 
-    # Update the robot's position based on current wheel speeds
-    robot.update(delta_t)
-    robot.detect_walls(walls)
+
+    coll, wall = detect_collision(robot, walls)
+    print(coll)
+    if coll:
+        robot.updatewall(wall, delta_t)
+        robot.detect_walls(walls)
+    else:
+        robot.update(delta_t)
+        robot.detect_walls(walls)
+
 
     # Clear the screen
     screen.fill(WHITE)

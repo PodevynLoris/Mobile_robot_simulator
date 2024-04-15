@@ -3,6 +3,7 @@ import math
 import numpy as np
 
 from Sensor import Sensor
+from utils import get_wall_vectors
 
 
 class Robot2:
@@ -138,6 +139,35 @@ class Robot2:
 
     def get_R(self):
         return self._R
+
+    def updatewall(self, wall, delta_t):
+
+        w = (self._vr - self._vl) / self._l  # angular velocity in radians per second
+
+        wall = get_wall_vectors(wall,[self._x, self._y])
+        print(wall)
+        if wall[1] == 0 and (wall[0]==1 or wall[0]==-1):  # vertical
+            self._y -= self._vr * delta_t * math.sin(self._theta)  # Negate the change in y
+            self._theta += w * delta_t  # Ensure any theta adjustment is in radians
+            print(self._x,self._y)
+        if wall[0]==1 and (wall[1]==-1 or wall[1]==1): # horizontal
+            self._x += self._vr * delta_t * math.cos(self._theta)
+            self._theta += w * delta_t  # Ensure any theta adjustment is in radians
+            print(self._x, self._y)
+
+        for i in range(self._num_sensors):
+            SENSOR_ANGLE = 2 * math.pi / self._num_sensors
+            angle = self.get_orientation() + i * SENSOR_ANGLE
+            x_sensor = self.get_position()[0] + self.get_l() / 2 * math.cos(angle)
+            y_sensor = self.get_position()[1] - self.get_l() / 2 * math.sin(angle)
+
+            self._sensors[i].set_position(x_sensor,
+                                          y_sensor)  # = Sensor(x_sensor, y_sensor, self._radius_sensor, angle, self._num_sensors)
+            self._sensors[i].set_angle(angle)
+
+
+
+
 
 
 

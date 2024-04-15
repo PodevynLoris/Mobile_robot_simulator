@@ -62,6 +62,8 @@ class Robot2:
         self._vl, self._vr = velocity
 
     def update(self, delta_t):
+
+
         w = (self._vr - self._vl) / self._l  # angular velocity in radians per second
 
         if self._vr == self._vl:  # If moving straight
@@ -118,3 +120,8 @@ class Robot2:
 
     def get_R(self):
         return self._R
+
+
+
+
+

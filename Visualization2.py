@@ -50,7 +50,29 @@ walls = [
 
 SPEED = delta_ms
 
+def detect_collision(robot, walls, return_distance=False):
+    robot_radius = robot.get_l() / 2
+    robot_center = np.array(robot.get_position())
+    for wall in walls:
+        closest_x = max(wall.rect.left, min(robot_center[0], wall.rect.right))
+        closest_y = max(wall.rect.top, min(robot_center[1], wall.rect.bottom))
+        distance = np.sqrt((closest_x - robot_center[0]) ** 2 + (closest_y - robot_center[1]) ** 2)
 
+        if distance <= robot_radius:
+            if return_distance:
+                return True, wall, robot_center - np.array([closest_x, closest_y])
+            return True, wall
+        return (False, None) + ((None,) if return_distance else ())
+
+def get_wall_vectors(wall):
+    """ Returns the unit normal and tangent vectors to the wall, adjusted for Pygame's coordinate system. """
+    if wall.rect.width > wall.rect.height:  # Horizontal wall
+        normal = np.array([0, 1]) if robot.get_position()[1] > wall.rect.centery else np.array([0, -1])
+        tangent = np.array([1, 0])
+    else:  # Vertical wall
+        normal = np.array([1, 0]) if robot.get_position()[0] < wall.rect.centerx else np.array([-1, 0])
+        tangent = np.array([0, 1])
+    return normal, tangent
 
 
 running = True

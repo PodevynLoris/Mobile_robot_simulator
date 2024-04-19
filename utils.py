@@ -8,4 +8,4 @@ def get_wall_vectors(wall, robot_position):
     else:
         normal = np.array([1, 0]) if robot_position[0] < wall.rect.centerx else np.array([-1, 0])
         tangent = np.array([0, 1])
-    return normal
+    return normal, tangent
